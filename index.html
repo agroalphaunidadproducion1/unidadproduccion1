@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Login - Sistema Agroalpha</title>
+    <link rel="icon" type="image/png" href="icon-192.png">
+    <link rel="icon" type="image/x-icon" href="icon-192.png">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/login.css">
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-auth-compat.js"></script>
+</head>
+<body>
+    <!-- Pantalla de Splash para móviles -->
+    <div id="splashScreen" class="splash-screen">
+        <img src="/images/logo-agroalpha.png" alt="Agroalpha Logo" class="splash-logo">
+        <div class="splash-text">Sistema Agroalpha</div>
+    </div>
+    
+    <!-- Pantalla de carga -->
+    <div id="loadingScreen" class="loading-container hidden">
+        <div class="loading"></div>
+        <div class="loading-text">Verificando sesión...</div>
+    </div>
+    
+    <!-- Contenido principal -->
+    <div class="main-content">
+        <!-- Formulario de Login -->
+        <div id="loginFormContainer" class="login-container hidden">
+            <img src="/images/logo-agroalpha.png" alt="Logo Agroalpha" class="logo">
+            <h1>Iniciar Sesión</h1>
+            
+            <form id="loginForm">
+                <div class="form-group">
+                    <label for="username">Usuario</label>
+                    <input type="text" id="username" required autocomplete="username" autocapitalize="off">
+                </div>
+                
+                <div class="form-group">
+                    <label for="password">Contraseña</label>
+                    <div class="password-container">
+                        <input type="password" id="password" required autocomplete="current-password">
+                        <button type="button" class="toggle-password" id="togglePassword">👁️</button>
+                    </div>
+                </div>
+                
+                <div class="remember-forgot">
+                    <div class="remember-me">
+                        <input type="checkbox" id="remember">
+                        <label for="remember">Recordarme</label>
+                    </div>
+                    <button type="button" class="forgot-password" id="forgotPassword">¿Olvidó su contraseña?</button>
+                </div>
+                
+                <button type="submit" id="loginButton" class="btn-login">
+                    <span id="buttonText">Ingresar</span>
+                </button>
+                
+                <div id="errorMessage" class="error-message"></div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal para recuperación de contraseña -->
+    <div id="passwordModal" class="modal">
+        <div class="modal-content">
+            <button class="close-modal" id="closeModal">&times;</button>
+            <h2 class="modal-title">Recuperar Contraseña</h2>
+            <p class="modal-text">Por favor contacte al administrador del sistema para restablecer su contraseña.</p>
+            
+            <div class="contact-info">
+                <div class="contact-item">
+                    <span class="contact-icon">📞</span>
+                    <span>Teléfono: +504 88897202</span>
+                </div>
+                <div class="contact-item">
+                    <span class="contact-icon">✉️</span>
+                    <span>Email: produccion1@agroalpha.hn</span>
+                </div>
+                <div class="contact-item">
+                    <span class="contact-icon">🕒</span>
+                    <span>Horario: Lunes a Viernes 8:00 - 17:00</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para ayuda técnica -->
+    <div id="helpModal" class="modal">
+        <div class="modal-content">
+            <button class="close-modal" id="closeHelpModal">&times;</button>
+            <h2 class="modal-title">Ayuda Técnica</h2>
+            <p class="modal-text">Para asistencia técnica, contacte al departamento de sistemas:</p>
+            
+            <div class="contact-info">
+                <div class="contact-item">
+                    <span class="contact-icon">📞</span>
+                    <span>Teléfono: +504 88897202</span>
+                </div>
+                <div class="contact-item">
+                    <span class="contact-icon">✉️</span>
+                    <span>Email: soporteunidad1@agroalpha.com</span>
+                </div>
+                <div class="contact-item">
+                    <span class="contact-icon">🕒</span>
+                    <span>Horario: Lunes a Viernes 7:00 - 16:00</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Configuración de Firebase (reemplaza con tus credenciales)
+        const firebaseConfig = {
+            apiKey: "TU_API_KEY",
+            authDomain: "agro-productos.firebaseapp.com",
+            databaseURL: "https://agro-productos-default-rtdb.firebaseio.com",
+            projectId: "agro-productos",
+            storageBucket: "agro-productos.appspot.com",
+            messagingSenderId: "TU_SENDER_ID",
+            appId: "TU_APP_ID"
+        };
+        
+        // Inicializar Firebase
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+        const auth = firebase.auth();
+        
+        // Referencias a las tablas
+        const usersRef = database.ref('login');
+        const activeUsersRef = database.ref('uactivos');
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            // Mostrar splash screen en móviles
+            if (isMobileDevice()) {
+                setTimeout(() => {
+                    document.getElementById('splashScreen').classList.add('hidden');
+                    checkSavedSession();
+                }, 2000);
+            } else {
+                document.getElementById('splashScreen').classList.add('hidden');
+                checkSavedSession();
+            }
+            
+            // Configurar toggle de contraseña
+            document.getElementById('togglePassword').addEventListener('click', function() {
+                const passwordInput = document.getElementById('password');
+                const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+                passwordInput.setAttribute('type', type);
+                this.textContent = type === 'password' ? '👁️' : '👁️‍🗨️';
+            });
+            
+            // Manejar el envío del formulario
+            document.getElementById('loginForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                loginUser();
+            });
+            
+            // Manejar clic en "Olvidó su contraseña"
+            document.getElementById('forgotPassword').addEventListener('click', function() {
+                document.getElementById('passwordModal').style.display = 'flex';
+            });
+            
+            // Cerrar modales
+            document.getElementById('closeModal').addEventListener('click', function() {
+                document.getElementById('passwordModal').style.display = 'none';
+            });
+            
+            document.getElementById('closeHelpModal').addEventListener('click', function() {
+                document.getElementById('helpModal').style.display = 'none';
+            });
+            
+            // Cerrar modal al hacer clic fuera del contenido
+            window.addEventListener('click', function(e) {
+                if (e.target === document.getElementById('passwordModal')) {
+                    document.getElementById('passwordModal').style.display = 'none';
+                }
+                if (e.target === document.getElementById('helpModal')) {
+                    document.getElementById('helpModal').style.display = 'none';
+                }
+            });
+        });
+        
+        function isMobileDevice() {
+            return (typeof window.orientation !== "undefined") || 
+                   (navigator.userAgent.indexOf('IEMobile') !== -1) ||
+                   /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        }
+        
+        function checkSavedSession() {
+            document.getElementById('loadingScreen').classList.remove('hidden');
+            
+            const rememberedUser = localStorage.getItem('rememberedUser');
+            if (rememberedUser) {
+                // Verificar si el usuario está en uactivos
+                activeUsersRef.child(rememberedUser).once('value')
+                    .then(snapshot => {
+                        if (snapshot.exists()) {
+                            // El usuario está activo, verificar credenciales
+                            verifyUserCredentials(rememberedUser);
+                        } else {
+                            // No está activo, mostrar formulario
+                            showLoginForm();
+                        }
+                    })
+                    .catch(error => {
+                        console.error("Error al verificar usuario activo:", error);
+                        showLoginForm();
+                    });
+            } else {
+                showLoginForm();
+            }
+        }
+        
+        function verifyUserCredentials(username) {
+            usersRef.child(username).once('value')
+                .then(snapshot => {
+                    if (snapshot.exists()) {
+                        const userData = snapshot.val();
+                        
+                        // Registrar como activo nuevamente
+                        registerActiveUser(username, userData);
+                        
+                        // Guardar datos de usuario en sessionStorage
+                        sessionStorage.setItem('currentUser', JSON.stringify({
+                            username: username,
+                            role: userData.role,
+                            name: userData.name,
+                            lastLogin: new Date().toISOString()
+                        }));
+                        
+                        // Redirigir al dashboard
+                        window.location.href = 'dashboard.html';
+                    } else {
+                        // Usuario no existe, mostrar formulario
+                        localStorage.removeItem('rememberedUser');
+                        showLoginForm();
+                    }
+                })
+                .catch(error => {
+                    console.error("Error al verificar credenciales:", error);
+                    showLoginForm();
+                });
+        }
+        
+        function showLoginForm() {
+            document.getElementById('loadingScreen').classList.add('hidden');
+            document.getElementById('loginFormContainer').classList.remove('hidden');
+            
+            // Verificar si hay una sesión guardada para autocompletar
+            const rememberedUser = localStorage.getItem('rememberedUser');
+            if (rememberedUser) {
+                document.getElementById('username').value = rememberedUser;
+                document.getElementById('remember').checked = true;
+                document.getElementById('password').focus();
+            } else {
+                document.getElementById('username').focus();
+            }
+        }
+        
+        function decryptPassword(encrypted) {
+            // Encriptación base64 (simple para desarrollo)
+            // En producción usar métodos más seguros
+            try {
+                return atob(encrypted);
+            } catch (e) {
+                return encrypted; // Fallback si no está encriptado
+            }
+        }
+        
+        function loginUser() {
+            const username = document.getElementById('username').value.trim();
+            const password = document.getElementById('password').value;
+            const remember = document.getElementById('remember').checked;
+            
+            const errorMessage = document.getElementById('errorMessage');
+            const loginButton = document.getElementById('loginButton');
+            const buttonText = document.getElementById('buttonText');
+            
+            errorMessage.textContent = '';
+            loginButton.disabled = true;
+            buttonText.innerHTML = '<span class="loading"></span> Verificando...';
+            
+            // Validación básica
+            if (!username || !password) {
+                errorMessage.textContent = 'Por favor complete todos los campos';
+                loginButton.disabled = false;
+                buttonText.textContent = 'Ingresar';
+                return;
+            }
+            
+            // Buscar usuario en la base de datos
+            usersRef.child(username).once('value')
+                .then(snapshot => {
+                    if (snapshot.exists()) {
+                        const userData = snapshot.val();
+                        const decryptedPassword = decryptPassword(userData.password);
+                        
+                        if (password === decryptedPassword) {
+                            // Guardar en localStorage si marcó "Recordarme"
+                            if (remember) {
+                                localStorage.setItem('rememberedUser', username);
+                            } else {
+                                localStorage.removeItem('rememberedUser');
+                            }
+                            
+                            // Registrar usuario en uactivos
+                            registerActiveUser(username, userData);
+                            
+                            // Guardar datos de usuario en sessionStorage
+                            sessionStorage.setItem('currentUser', JSON.stringify({
+                                username: username,
+                                role: userData.role,
+                                name: userData.name,
+                                lastLogin: new Date().toISOString()
+                            }));
+                            
+                            // Redirigir al dashboard
+                            window.location.href = 'dashboard.html';
+                        } else {
+                            errorMessage.textContent = 'Credenciales incorrectas';
+                            loginButton.disabled = false;
+                            buttonText.textContent = 'Ingresar';
+                            document.getElementById('password').focus();
+                        }
+                    } else {
+                        errorMessage.textContent = 'Usuario no encontrado';
+                        loginButton.disabled = false;
+                        buttonText.textContent = 'Ingresar';
+                        document.getElementById('username').focus();
+                    }
+                })
+                .catch(error => {
+                    errorMessage.textContent = 'Error al iniciar sesión. Intente nuevamente.';
+                    console.error("Error en login:", error);
+                    loginButton.disabled = false;
+                    buttonText.textContent = 'Ingresar';
+                });
+        }
+        
+        function registerActiveUser(username, userData) {
+            const userStatus = {
+                username: username,
+                name: userData.name,
+                role: userData.role,
+                lastLogin: firebase.database.ServerValue.TIMESTAMP,
+                status: 'active',
+                deviceType: isMobileDevice() ? 'mobile' : 'desktop',
+                os: navigator.platform,
+                userAgent: navigator.userAgent
+            };
+            
+            activeUsersRef.child(username).set(userStatus)
+                .catch(error => {
+                    console.error("Error al registrar usuario activo:", error);
+                });
+        }
+    </script>
+    <script src="/js/footer.js"></script>
+</body>
+</html>
