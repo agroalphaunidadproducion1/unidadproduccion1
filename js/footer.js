@@ -30,7 +30,26 @@ class FooterManager {
         // Insertar el footer al FINAL del body
         document.body.appendChild(footer);
         
+        // Asegurar que el body ocupe toda la altura
+        this.ajustarLayoutPrincipal();
+        
         this.aplicarEstilosDinamicos();
+    }
+
+    ajustarLayoutPrincipal() {
+        // Asegurar que el contenedor principal ocupe el espacio restante
+        const mainContent = document.querySelector('main, .main-content, .content, #content') 
+            || document.querySelector('body > div:not(footer):not(header)');
+        
+        if (mainContent) {
+            mainContent.style.minHeight = 'calc(100vh - 70px)';
+            mainContent.style.paddingBottom = '20px';
+        } else {
+            // Si no hay contenedor principal, ajustar el body
+            document.body.style.minHeight = '100vh';
+            document.body.style.display = 'flex';
+            document.body.style.flexDirection = 'column';
+        }
     }
 
     generarHTML() {
@@ -46,7 +65,9 @@ class FooterManager {
 
     obtenerEstilosFooter() {
         return `
-            position: relative;
+            position: fixed;
+            bottom: 0;
+            left: 0;
             width: 100%;
             background-color: rgba(255, 255, 255, 0.95);
             padding: 15px 0;
@@ -55,7 +76,7 @@ class FooterManager {
             font-family: 'Roboto', sans-serif;
             z-index: 10;
             backdrop-filter: blur(5px);
-            margin-top: 40px;
+            box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.05);
         `;
     }
 
@@ -68,6 +89,15 @@ class FooterManager {
         const style = document.createElement('style');
         style.id = 'footer-styles';
         style.textContent = `
+            body {
+                margin: 0;
+                padding: 0;
+                position: relative;
+                padding-bottom: 70px; /* Espacio para el footer fijo */
+                min-height: 100vh;
+                box-sizing: border-box;
+            }
+
             .footer-container {
                 max-width: 1200px;
                 margin: 0 auto;
@@ -96,19 +126,27 @@ class FooterManager {
                 text-decoration: underline;
             }
 
-            /* Asegurar que el footer esté siempre detrás de otros elementos */
-            header-component,
-            sidebar-component,
-            .header,
-            .sidebar {
-                z-index: 1000 !important;
+            /* Estilos para el contenido principal */
+            main, .main-content, .content, #content {
+                flex: 1 0 auto;
             }
 
+            /* Asegurar que el footer esté siempre abajo */
             footer {
-                z-index: 10 !important;
+                flex-shrink: 0;
+            }
+
+            /* Ajustes para contenido con scroll */
+            .scrollable-content {
+                max-height: calc(100vh - 140px);
+                overflow-y: auto;
             }
 
             @media (max-width: 768px) {
+                body {
+                    padding-bottom: 60px;
+                }
+                
                 .footer-content {
                     font-size: 11px;
                 }
@@ -119,6 +157,10 @@ class FooterManager {
             }
 
             @media (max-width: 480px) {
+                body {
+                    padding-bottom: 50px;
+                }
+                
                 .footer-content {
                     font-size: 10px;
                 }
@@ -126,6 +168,17 @@ class FooterManager {
                 footer {
                     padding: 10px 0;
                 }
+            }
+
+            /* Para páginas con poco contenido */
+            .short-page {
+                display: flex;
+                flex-direction: column;
+                min-height: 100vh;
+            }
+            
+            .short-page > *:not(footer) {
+                flex: 1;
             }
         `;
         document.head.appendChild(style);
@@ -138,5 +191,4 @@ const footer = new FooterManager();
 // Exportar para uso en otros módulos si es necesario
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = FooterManager;
-
 }
