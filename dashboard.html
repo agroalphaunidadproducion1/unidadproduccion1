@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Sistema Agroalpha</title>
+    <link rel="icon" type="image/png" href="icon-192.png">
+    
+    <!-- Estilos -->
+    <link rel="stylesheet" href="/css/theme.css">
+    <link rel="stylesheet" href="components.css">
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: 'Segoe UI', 'SF Pro Display', -apple-system, sans-serif;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    line-height: 1.6;
+    min-height: 100vh;
+}
+
+.main-content {
+    padding: 40px 30px;
+    max-width: 1600px;
+    margin: 0 auto;
+}
+
+.modules-container {
+    display: grid;
+    gap: 50px;
+}
+
+.category-title {
+    font-size: 1.4rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 30px;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.category-icon {
+    width: 40px;
+    height: 40px;
+    background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 1.1rem;
+}
+
+.cards-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 25px;
+}
+
+.card {
+    background: white;
+    border-radius: 20px;
+    padding: 25px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    cursor: pointer;
+    border: 2px solid transparent;
+    position: relative;
+    overflow: hidden;
+}
+
+.card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 4px;
+    background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
+    transform: scaleX(0);
+    transition: transform 0.4s ease;
+    transform-origin: left;
+}
+
+.card:hover {
+    transform: translateY(-10px) scale(1.02);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+    border-color: var(--primary-light);
+}
+
+.card:hover::before {
+    transform: scaleX(1);
+}
+
+.card-header {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin-bottom: 15px;
+}
+
+.card-icon {
+    width: 50px;
+    height: 50px;
+    background: linear-gradient(135deg, var(--primary-light), var(--primary-color));
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 1.4rem;
+    transition: all 0.4s ease;
+}
+
+.card:hover .card-icon {
+    transform: rotateY(180deg);
+    background: linear-gradient(135deg, var(--secondary-color), var(--primary-color));
+}
+
+.card h3 {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0;
+    flex: 1;
+}
+
+.card-content {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    line-height: 1.5;
+    margin-bottom: 20px;
+    max-height: 0;
+    overflow: hidden;
+    opacity: 0;
+    transition: all 0.4s ease;
+}
+
+.card:hover .card-content {
+    max-height: 100px;
+    opacity: 1;
+    margin-bottom: 20px;
+}
+
+.card-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: auto;
+    opacity: 0;
+    transform: translateY(10px);
+    transition: all 0.4s ease;
+}
+
+.card:hover .card-footer {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.card-status {
+    font-size: 0.75rem;
+    padding: 4px 12px;
+    background: var(--success-color);
+    color: white;
+    border-radius: 12px;
+    font-weight: 500;
+}
+
+.card-arrow {
+    color: var(--primary-color);
+    font-size: 1rem;
+    transition: transform 0.3s ease;
+}
+
+.card:hover .card-arrow {
+    transform: translateX(5px);
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+    .cards-container {
+        grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+        gap: 20px;
+    }
+}
+
+@media (max-width: 768px) {
+    .cards-container {
+        grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+        gap: 18px;
+    }
+    
+    .card {
+        padding: 20px;
+    }
+}
+
+@media (max-width: 480px) {
+    .cards-container {
+        grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+        gap: 16px;
+    }
+    
+    .card-header {
+        flex-direction: column;
+        text-align: center;
+        gap: 12px;
+    }
+}
+    </style>
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-database-compat.js"></script>
+</head>
+<body data-theme="light">
+    <!-- Componentes -->
+    <header-component></header-component>
+    <sidebar-component></sidebar-component>
+    
+    <!-- Contenido principal mejorado -->
+    <div class="main-content" id="mainContent">
+        <div class="dashboard-section">
+            <!-- Se eliminó el título "Módulos del Sistema" -->
+            <div class="modules-container" id="modulesContainer">
+                <div class="loading">
+                    <i class="fas fa-spinner fa-spin"></i> Cargando módulos...
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="header-component.js"></script>
+    <script src="sidebar-component.js"></script>
+    <script src="/js/footer.js"></script>
+    <script>
+        // dashboard.js - Lógica específica del dashboard
+
+        // Configuración de Firebase
+        const firebaseConfig = {
+            databaseURL: "https://agro-productos-default-rtdb.firebaseio.com/"
+        };
+
+        // Inicializar Firebase
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+        const activeUsersRef = database.ref('uactivos');
+        const modulesRef = database.ref('modules');
+        const accessRef = database.ref('accesos');
+
+        // Variables globales
+        let systemModules = [];
+        let roleAccess = {};
+        let userRole = '';
+        let currentUser = null;
+
+        // Sistema de temas
+        const themes = ['light', 'dark', 'blue', 'orange', 'purple'];
+        let currentThemeIndex = 0;
+
+        // Cargar tema guardado
+        function loadSavedTheme() {
+            const savedTheme = localStorage.getItem('agroalpha-theme');
+            if (savedTheme) {
+                currentThemeIndex = themes.indexOf(savedTheme);
+                if (currentThemeIndex === -1) currentThemeIndex = 0;
+                document.body.setAttribute('data-theme', themes[currentThemeIndex]);
+            }
+        }
+
+        // Verificar sesión al cargar
+        document.addEventListener('DOMContentLoaded', async function() {
+            const userData = JSON.parse(sessionStorage.getItem('currentUser'));
+            
+            if (!userData || !userData.username) {
+                window.location.href = 'index.html';
+                return;
+            }
+            
+            // Guardar el rol del usuario
+            currentUser = userData;
+            userRole = userData.role;
+            
+            console.log('Usuario actual:', userData);
+            
+            // Cargar tema guardado
+            loadSavedTheme();
+            
+            // Configurar eventos de logout
+            document.addEventListener('logout', logout);
+            
+            // Verificar si el usuario sigue activo en uactivos
+            activeUsersRef.child(userData.username).once('value')
+                .then(snapshot => {
+                    if (!snapshot.exists()) {
+                        logout();
+                        return;
+                    }
+                    
+                    // Cargar datos de Firebase para los módulos
+                    loadFirebaseData();
+                })
+                .catch(error => {
+                    console.error('Error verificando sesión activa:', error);
+                    showError('Error de conexión. Intente recargar la página.');
+                    
+                    // Intentar cargar datos aunque falle la verificación
+                    loadFirebaseData();
+                });
+        });
+
+        // Cargar datos desde Firebase
+        function loadFirebaseData() {
+            console.log('Cargando datos de Firebase...');
+            
+            // Cargar módulos y accesos en paralelo
+            Promise.all([
+                modulesRef.once('value'),
+                accessRef.once('value')
+            ])
+            .then(([modulesSnapshot, accessSnapshot]) => {
+                console.log('Datos cargados de Firebase:', {
+                    modules: modulesSnapshot.exists(),
+                    access: accessSnapshot.exists()
+                });
+                
+                // Procesar módulos
+                if (modulesSnapshot.exists()) {
+                    const modulesData = modulesSnapshot.val();
+                    console.log('Datos de módulos:', modulesData);
+                    
+                    // Verificar si modulesData es un array o un objeto
+                    if (Array.isArray(modulesData)) {
+                        systemModules = modulesData;
+                    } else if (typeof modulesData === 'object' && modulesData !== null) {
+                        // Convertir objeto a array
+                        systemModules = Object.values(modulesData);
+                    } else {
+                        systemModules = [];
+                    }
+                    
+                    console.log('Módulos procesados:', systemModules);
+                } else {
+                    console.error('No se encontraron módulos en Firebase');
+                    systemModules = [];
+                }
+                
+                // Procesar accesos
+                if (accessSnapshot.exists()) {
+                    roleAccess = accessSnapshot.val();
+                    console.log('Accesos cargados:', roleAccess);
+                } else {
+                    console.error('No se encontraron accesos en Firebase');
+                    roleAccess = {};
+                }
+                
+                // Generar las tarjetas con los permisos del usuario
+                generateFeatureCards();
+            })
+            .catch(error => {
+                console.error('Error cargando datos de Firebase:', error);
+                showError('Error al cargar los módulos. Intente recargar la página.');
+            });
+        }
+
+        // Organizar módulos por categorías (sin "Otros" y "Especializados")
+        function categorizeModules(modules) {
+            const categories = {
+                'Gestión de Personal': ['usuarios', 'asistencias', 'personal', 'registrar-asistencia'],
+                'Producción Agrícola': ['cosechas', 'actividades', 'registrar-actividades', 'proyecciones'],
+                'Control y Monitoreo': ['plagas', 'riego', 'humedad', 'quimicos', 'aplicaciones', 'ver-aplicaciones'],
+                'Documentación': ['documentos', 'basedatos', 'consultas', 'reportes-publicos']
+            };
+            
+            const categorized = {};
+            
+            modules.forEach(module => {
+                if (!module || !module.id) return;
+                
+                let foundCategory = null;
+                
+                // Buscar en qué categoría pertenece el módulo
+                for (const [category, moduleIds] of Object.entries(categories)) {
+                    if (moduleIds.includes(module.id)) {
+                        foundCategory = category;
+                        break;
+                    }
+                }
+                
+                // Solo agregar si pertenece a una categoría válida (no "Otros")
+                if (foundCategory) {
+                    if (!categorized[foundCategory]) {
+                        categorized[foundCategory] = [];
+                    }
+                    
+                    categorized[foundCategory].push(module);
+                }
+            });
+            
+            return categorized;
+        }
+
+        // Ordenar módulos alfabéticamente por título
+        function sortModulesAlphabetically(modules) {
+            return modules.sort((a, b) => {
+                const titleA = a.title || '';
+                const titleB = b.title || '';
+                return titleA.localeCompare(titleB, 'es', { sensitivity: 'base' });
+            });
+        }
+
+        // Verificar si el usuario tiene acceso a un módulo
+        function hasAccessToModule(module) {
+            if (!module || !module.id) return false;
+            
+            // Obtener los accesos para el rol del usuario
+            const userAccess = roleAccess[userRole];
+            if (!userAccess) return false;
+            
+            console.log(`Verificando acceso para módulo: ${module.id}`, {
+                userRole: userRole,
+                userAccess: userAccess,
+                moduleId: module.id,
+                hasDirectAccess: userAccess[module.id],
+                hasNormalizedAccess: userAccess[module.id?.toLowerCase()]
+            });
+            
+            // Verificar acceso directo
+            if (userAccess[module.id]) return true;
+            
+            // Verificar acceso con ID en minúsculas
+            if (userAccess[module.id.toLowerCase()]) return true;
+            
+            // Verificar acceso para IDs comunes
+            const commonIds = [
+                module.id,
+                module.id.toLowerCase(),
+                module.id.replace(/-/g, ''),
+                module.id.replace(/ /g, '-')
+            ];
+            
+            for (const id of commonIds) {
+                if (userAccess[id]) return true;
+            }
+            
+            return false;
+        }
+
+        // Generar tarjetas de características según los permisos del rol
+        function generateFeatureCards() {
+            const container = document.getElementById('modulesContainer');
+            
+            // Verificar si tenemos los datos necesarios
+            if (systemModules.length === 0) {
+                container.innerHTML = '<div class="error-message">No hay módulos configurados en el sistema.</div>';
+                return;
+            }
+            
+            if (Object.keys(roleAccess).length === 0) {
+                container.innerHTML = '<div class="error-message">No hay permisos configurados en el sistema.</div>';
+                return;
+            }
+            
+            console.log('Generando tarjetas para rol:', userRole);
+            console.log('Módulos disponibles:', systemModules);
+            console.log('Accesos para este rol:', roleAccess[userRole]);
+            
+            // Obtener los accesos para el rol del usuario
+            const userAccess = roleAccess[userRole];
+            
+            if (!userAccess) {
+                container.innerHTML = `<div class="error-message">No se encontraron permisos para el rol "${userRole}".</div>`;
+                return;
+            }
+            
+            // Filtrar módulos a los que el usuario tiene acceso
+            const accessibleModules = systemModules.filter(module => hasAccessToModule(module));
+            
+            console.log('Módulos accesibles:', accessibleModules);
+            
+            if (accessibleModules.length === 0) {
+                container.innerHTML = `
+                    <div class="error-message">
+                        No tiene acceso a ningún módulo. Contacte al administrador.
+                        <div class="debug-info">
+                            <strong>Debug Info:</strong><br>
+                            Rol: ${userRole}<br>
+                            Módulos totales: ${systemModules.length}<br>
+                            Accesos configurados: ${Object.keys(userAccess).length}
+                        </div>
+                    </div>
+                `;
+                return;
+            }
+            
+            // Organizar módulos por categorías (sin "Otros" y "Especializados")
+            const categorizedModules = categorizeModules(accessibleModules);
+            
+            console.log('Módulos categorizados:', categorizedModules);
+            
+            // Generar HTML para cada categoría
+            container.innerHTML = '';
+            
+            Object.entries(categorizedModules).forEach(([category, modules]) => {
+                const categorySection = document.createElement('div');
+                categorySection.className = 'modules-category';
+                
+                const categoryTitle = document.createElement('h3');
+                categoryTitle.className = 'category-title';
+                categoryTitle.textContent = category;
+                
+                const cardsContainer = document.createElement('div');
+                cardsContainer.className = 'cards-container';
+                
+                // Ordenar módulos alfabéticamente
+                const sortedModules = sortModulesAlphabetically(modules);
+                
+                // Generar tarjetas para los módulos de esta categoría
+                sortedModules.forEach(module => {
+                    const card = document.createElement('div');
+                    card.className = 'card';
+                    card.onclick = function() {
+                        if (module.link && module.link !== '#') {
+                            window.location.href = module.link;
+                        } else {
+                            console.warn('Módulo sin enlace:', module);
+                        }
+                    };
+                    
+                    card.innerHTML = `
+                        <div class="card-icon"><i class="fas ${module.icon || 'fa-cube'}"></i></div>
+                        <h3>${module.title || 'Módulo sin nombre'}</h3>
+                    `;
+                    
+                    cardsContainer.appendChild(card);
+                });
+                
+                categorySection.appendChild(categoryTitle);
+                categorySection.appendChild(cardsContainer);
+                container.appendChild(categorySection);
+            });
+            
+            // Si no hay categorías, mostrar todos los módulos en una sola sección
+            if (Object.keys(categorizedModules).length === 0 && accessibleModules.length > 0) {
+                const cardsContainer = document.createElement('div');
+                cardsContainer.className = 'cards-container';
+                
+                // Ordenar módulos alfabéticamente
+                const sortedModules = sortModulesAlphabetically(accessibleModules);
+                
+                // Generar tarjetas para todos los módulos accesibles
+                sortedModules.forEach(module => {
+                    const card = document.createElement('div');
+                    card.className = 'card';
+                    card.onclick = function() {
+                        if (module.link && module.link !== '#') {
+                            window.location.href = module.link;
+                        } else {
+                            console.warn('Módulo sin enlace:', module);
+                        }
+                    };
+                    
+                    card.innerHTML = `
+                        <div class="card-icon"><i class="fas ${module.icon || 'fa-cube'}"></i></div>
+                        <h3>${module.title || 'Módulo sin nombre'}</h3>
+                    `;
+                    
+                    cardsContainer.appendChild(card);
+                });
+                
+                container.appendChild(cardsContainer);
+            }
+        }
+
+        // Mostrar mensaje de error
+        function showError(message) {
+            const container = document.getElementById('modulesContainer');
+            container.innerHTML = `<div class="error-message">${message}</div>`;
+        }
+
+        // Cerrar sesión
+        function logout() {
+            if (currentUser?.username) {
+                // Eliminar de usuarios activos
+                activeUsersRef.child(currentUser.username).remove()
+                    .then(() => {
+                        sessionStorage.removeItem('currentUser');
+                        window.location.href = 'index.html';
+                    })
+                    .catch(error => {
+                        console.error('Error al cerrar sesión:', error);
+                        sessionStorage.removeItem('currentUser');
+                        window.location.href = 'index.html';
+                    });
+            } else {
+                sessionStorage.removeItem('currentUser');
+                window.location.href = 'index.html';
+            }
+        }
+    </script>
+</body>
+</html>
